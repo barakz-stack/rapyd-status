@@ -30,15 +30,15 @@ h1{font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:3px}
 .panel-red-title{color:#f87171;font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 table{width:100%;border-collapse:collapse;font-size:12px}
 thead tr{border-bottom:1px solid #3d1f1f}
-th{text-align:left;padding:7px 10px;color:#7f3f3f;font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:0.04em}
+th{text-align:left;padding:6px 10px;color:#7f3f3f;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:0.04em}
 tbody tr{border-bottom:1px solid #2a1515}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:#2a1a1a44}
 td{padding:8px 10px}
-.t-date{color:#94a3b8}
-.t-time{font-family:monospace;color:#e2e8f0;font-size:13px}
+.t-date{color:#94a3b8;font-size:11px}
+.t-time{font-family:monospace;color:#e2e8f0;font-size:12px}
 .t-dur{color:#fca5a5;font-weight:600}
-.t-tag{display:inline-block;font-size:10px;background:#7f1d1d55;color:#fca5a5;padding:1px 7px;border-radius:10px}
+.t-tag{display:inline-block;font-size:9px;background:#7f1d1d55;color:#fca5a5;padding:1px 7px;border-radius:10px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
 .sc{background:#1e2130;border:1px solid #2d3748;border-radius:10px;padding:14px}
 .sl{font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
@@ -60,7 +60,7 @@ td{padding:8px 10px}
     <div class="uptime-bar" id="uBar"></div>
     <div class="tip" id="bTip"></div>
   </div>
-  <div class="bar-labels"><span>30 days ago</span><span>Today</span></div>
+  <div class="bar-labels"><span id="barStart">40 days ago</span><span>Today</span></div>
   <div class="uptime-pct" id="uPct"></div>
   <div class="legend">
     <div class="li"><div class="ld" style="background:#1d9e75"></div>Clean</div>
@@ -72,17 +72,16 @@ td{padding:8px 10px}
 <div class="card" id="iPanel"></div>
 
 <div class="stats">
-  <div class="sc"><div class="sl">Total Requests (7d)</div><div class="sv" id="s1">—</div><div style="font-size:11px;color:#475569;margin-top:3px" id="s1b"></div></div>
+  <div class="sc"><div class="sl">Monitored Days</div><div class="sv" id="s1">—</div><div style="font-size:11px;color:#475569;margin-top:3px" id="s1b"></div></div>
   <div class="sc"><div class="sl">Outage Minutes</div><div class="sv" id="s2">—</div><div style="font-size:11px;color:#475569;margin-top:3px" id="s2b"></div></div>
   <div class="sc"><div class="sl">Uptime</div><div class="sv" id="s3">—</div><div style="font-size:11px;color:#475569;margin-top:3px">Minute-level precision</div></div>
 </div>
 
-<div class="footer">Generated: 2026-05-28 · Rapyd NOC · Valitor 3DS</div>
+<div class="footer" id="footer">Rapyd NOC · Valitor 3DS · Outage = 0 req/min</div>
 
 <script>
-const DAYS30=[{"date": "2026-04-29", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-04-30", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-01", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-02", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-03", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-04", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-05", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-06", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-07", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-08", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-09", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-10", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-11", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-12", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-13", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-14", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-15", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-16", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-17", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-18", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-19", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-20", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-21", "gapMinutes": 0, "degradedMinutes": 1, "gaps": [], "degraded": [{"time": "02:37", "count": 3}], "hasData": true}, {"date": "2026-05-22", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-23", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-24", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-25", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-26", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-27", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}];
-const DAILY=[{"date": "2026-05-20", "total": 479948, "min": 10, "max": 629, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-21", "total": 452684, "min": 3, "max": 585, "gapMinutes": 0, "degradedMinutes": 1, "gaps": [], "degraded": [{"time": "02:37", "count": 3}]}, {"date": "2026-05-22", "total": 425947, "min": 13, "max": 496, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-23", "total": 406081, "min": 11, "max": 502, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-24", "total": 453034, "min": 10, "max": 555, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-25", "total": 501077, "min": 11, "max": 856, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-26", "total": 480421, "min": 14, "max": 612, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}];
-const TOTAL_REQS=3199192;
+const DAYS40=[{"date": "2026-04-19", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-20", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-21", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-22", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-23", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-24", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-25", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-04-26", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-04-27", "gapMinutes": 50, "gaps": [{"start": "10:08", "end": "10:50", "minutes": 41}, {"start": "20:06", "end": "20:16", "minutes": 9}], "hasData": true}, {"date": "2026-04-28", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-04-29", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-04-30", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-01", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-02", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-03", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-04", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-05", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-06", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-07", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-08", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-09", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-10", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-11", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-12", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-13", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-14", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-15", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-16", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-17", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-18", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-19", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-20", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-21", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-22", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-23", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-24", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-25", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-26", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-27", "gapMinutes": 0, "gaps": [], "hasData": false}];
+const DAILY=[{"date": "2026-04-25", "total": 0, "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-04-26", "total": 0, "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-04-27", "total": 0, "gapMinutes": 50, "gaps": [{"start": "10:08", "end": "10:50", "minutes": 41}, {"start": "20:06", "end": "20:16", "minutes": 9}], "hasData": true}, {"date": "2026-04-28", "total": 0, "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-04-29", "total": 0, "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-20", "total": 479948, "min": 10, "max": 629, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-21", "total": 452684, "min": 3, "max": 585, "gapMinutes": 0, "degradedMinutes": 1, "gaps": [], "degraded": [{"time": "02:37", "count": 3}]}, {"date": "2026-05-22", "total": 425947, "min": 13, "max": 496, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-23", "total": 406081, "min": 11, "max": 502, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-24", "total": 453034, "min": 10, "max": 555, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-25", "total": 501077, "min": 11, "max": 856, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-26", "total": 480421, "min": 14, "max": 612, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}];
 
 function segCol(d){if(!d.hasData)return null;return d.gapMinutes>0?'#e24b4a':'#1d9e75';}
 function segTxt(d){
@@ -92,7 +91,7 @@ function segTxt(d){
 }
 
 const bar=document.getElementById('uBar'),tip=document.getElementById('bTip');
-DAYS30.forEach(d=>{
+DAYS40.forEach(d=>{
   const seg=document.createElement('div');
   seg.className='seg';
   const col=segCol(d);
@@ -109,22 +108,22 @@ DAYS30.forEach(d=>{
   bar.appendChild(seg);
 });
 
-const dataDays=DAYS30.filter(d=>d.hasData);
+const dataDays=DAYS40.filter(d=>d.hasData);
 const totalMin=dataDays.length*1440;
 const gapMin=dataDays.reduce((s,d)=>s+d.gapMinutes,0);
 const pct=((totalMin-gapMin)/totalMin*100).toFixed(3);
-document.getElementById('uPct').textContent=pct+'% uptime · '+dataDays.length+' days monitored';
+
+document.getElementById('barStart').textContent=DAYS40[0].date;
+document.getElementById('uPct').textContent=pct+'% uptime · '+dataDays.length+' days with data out of '+DAYS40.length+' in window';
+document.getElementById('footer').textContent='Generated: '+new Date().toISOString().slice(0,10)+' · Rapyd NOC · Valitor 3DS · Outage = 0 req/min';
 
 const badge=document.getElementById('sBadge');
 badge.className=gapMin>0?'badge br':'badge bg';
 badge.textContent=gapMin>0?'Outage detected':'Operational';
 
-// Build all outage events sorted by date + time
 const allEvents=[];
 for(const d of DAILY){
-  for(const g of (d.gaps||[])){
-    allEvents.push({date:d.date, start:g.start, end:g.end, mins:g.minutes});
-  }
+  for(const g of (d.gaps||[])) allEvents.push({date:d.date,start:g.start,end:g.end,mins:g.minutes});
 }
 allEvents.sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
 
@@ -144,10 +143,8 @@ if(gapMin===0){
     <td>${e===longest?'<span class="t-tag">longest</span>':''}</td>
   </tr>`).join('');
   panel.innerHTML=`<div class="panel-red">
-    <div class="panel-red-title">
-      <span>🔴</span>
-      <span>${allEvents.length} outage event${allEvents.length>1?'s':''} · ${gapMin} zero-request minute${gapMin>1?'s':''} total</span>
-    </div>
+    <div class="panel-red-title"><span>🔴</span>
+    <span>${allEvents.length} outage event${allEvents.length>1?'s':''} · ${gapMin} zero-request minutes total</span></div>
     <table>
       <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
@@ -155,8 +152,8 @@ if(gapMin===0){
   </div>`;
 }
 
-document.getElementById('s1').textContent=(TOTAL_REQS/1000000).toFixed(2)+'M';
-document.getElementById('s1b').textContent=dataDays.length+' days · '+(dataDays.length*1440).toLocaleString()+' min monitored';
+document.getElementById('s1').textContent=dataDays.length;
+document.getElementById('s1b').textContent='Out of '+DAYS40.length+'-day window';
 document.getElementById('s2').textContent=gapMin;
 document.getElementById('s2').className='sv '+(gapMin>0?'r':'g');
 document.getElementById('s2b').textContent=gapMin===0?'No outages detected':gapMin+' min total downtime';
