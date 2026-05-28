@@ -138,13 +138,14 @@ if(gapMin===0){
     <td class="t-date">${e.date}</td>
     <td class="t-time">${e.start} UTC</td>
     <td class="t-time">${e.end} UTC</td>
+    <td class="t-dur">${e.mins} min</td>
     <td>${e===longest?'<span class="t-tag">longest</span>':''}</td>
   </tr>`).join('');
   panel.innerHTML=`<div class="panel-red">
     <div class="panel-red-title"><span>🔴</span>
-    <span>${allEvents.length} outage event${allEvents.length>1?'s':''} · ${gapMin} zero-request minutes total</span></div>
+    <span>${allEvents.length} outage event${allEvents.length>1?'s':''}</span></div>
     <table>
-      <thead><tr><th>Date</th><th>Start</th><th>End</th><th></th></tr></thead>
+      <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
   </div>`;
