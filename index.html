@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Valitor 3DS — Uptime</title>
+<title>3DS Requests from Valitor</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh;padding:24px}
@@ -48,12 +48,11 @@ td{padding:8px 10px}
 </style>
 </head>
 <body>
-<h1>Valitor 3DS — Uptime</h1>
-<div class="subtitle">Index: prd-logs* &nbsp;·&nbsp; label=3ds_server, message∋RequestLogger/log:, params∋Valitor &nbsp;·&nbsp; UTC &nbsp;·&nbsp; <span style="color:#475569">Outage = any minute with 0 requests</span></div>
+<h1>3DS Requests from Valitor</h1>
 
 <div class="card">
   <div class="uptime-header">
-    <span class="uptime-label">Valitor 3DS</span>
+    <span class="uptime-label">3DS Requests from Valitor</span>
     <span class="badge" id="sBadge">—</span>
   </div>
   <div class="bar-wrap">
@@ -139,14 +138,13 @@ if(gapMin===0){
     <td class="t-date">${e.date}</td>
     <td class="t-time">${e.start} UTC</td>
     <td class="t-time">${e.end} UTC</td>
-    <td class="t-dur">${e.mins} min</td>
     <td>${e===longest?'<span class="t-tag">longest</span>':''}</td>
   </tr>`).join('');
   panel.innerHTML=`<div class="panel-red">
     <div class="panel-red-title"><span>🔴</span>
     <span>${allEvents.length} outage event${allEvents.length>1?'s':''} · ${gapMin} zero-request minutes total</span></div>
     <table>
-      <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th></tr></thead>
+      <thead><tr><th>Date</th><th>Start</th><th>End</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
   </div>`;
