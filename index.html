@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valitor 3DS — Uptime</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh;padding:24px}
+h1{font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:3px}
+.subtitle{color:#64748b;font-size:0.8rem;margin-bottom:24px}
+.card{background:#1e2130;border:1px solid #2d3748;border-radius:12px;padding:18px 20px;margin-bottom:20px}
+.uptime-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.uptime-label{font-size:14px;font-weight:500;color:#e2e8f0}
+.badge{font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px}
+.bg{background:#065f46;color:#6ee7b7}.br{background:#7f1d1d;color:#fca5a5}
+.bar-wrap{position:relative}
+.uptime-bar{display:flex;gap:2px;height:36px;align-items:stretch}
+.seg{flex:1;border-radius:3px;cursor:pointer;transition:opacity 0.1s;min-width:0}
+.seg:hover{opacity:0.7}
+.bar-labels{display:flex;justify-content:space-between;margin-top:6px}
+.bar-labels span{font-size:11px;color:#475569}
+.uptime-pct{margin-top:6px;font-size:13px;color:#94a3b8}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #2d3748}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:#64748b}
+.ld{width:11px;height:11px;border-radius:2px;flex-shrink:0}
+.tip{display:none;position:absolute;bottom:44px;background:#1e2130;border:1px solid #374151;border-radius:8px;padding:8px 12px;font-size:12px;pointer-events:none;white-space:nowrap;z-index:10;color:#e2e8f0}
+.panel-clean{background:#064e3b22;border:1px solid #064e3b88;border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.panel-red{background:#7f1d1d22;border:1px solid #7f1d1d66;border-radius:8px;padding:14px 16px}
+.panel-red-title{color:#f87171;font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{border-bottom:1px solid #3d1f1f}
+th{text-align:left;padding:7px 10px;color:#7f3f3f;font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:0.04em}
+tbody tr{border-bottom:1px solid #2a1515}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#2a1a1a44}
+td{padding:8px 10px}
+.t-date{color:#94a3b8}
+.t-time{font-family:monospace;color:#e2e8f0;font-size:13px}
+.t-dur{color:#fca5a5;font-weight:600}
+.t-tag{display:inline-block;font-size:10px;background:#7f1d1d55;color:#fca5a5;padding:1px 7px;border-radius:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.sc{background:#1e2130;border:1px solid #2d3748;border-radius:10px;padding:14px}
+.sl{font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
+.sv{font-size:1.6rem;font-weight:700;color:#fff}
+.sv.g{color:#34d399}.sv.r{color:#f87171}
+.footer{text-align:center;color:#334155;font-size:11px;margin-top:18px}
+</style>
+</head>
+<body>
+<h1>Valitor 3DS — Uptime</h1>
+<div class="subtitle">Index: prd-logs* &nbsp;·&nbsp; label=3ds_server, message∋RequestLogger/log:, params∋Valitor &nbsp;·&nbsp; UTC &nbsp;·&nbsp; <span style="color:#475569">Outage = any minute with 0 requests</span></div>
+
+<div class="card">
+  <div class="uptime-header">
+    <span class="uptime-label">Valitor 3DS</span>
+    <span class="badge" id="sBadge">—</span>
+  </div>
+  <div class="bar-wrap">
+    <div class="uptime-bar" id="uBar"></div>
+    <div class="tip" id="bTip"></div>
+  </div>
+  <div class="bar-labels"><span>30 days ago</span><span>Today</span></div>
+  <div class="uptime-pct" id="uPct"></div>
+  <div class="legend">
+    <div class="li"><div class="ld" style="background:#1d9e75"></div>Clean</div>
+    <div class="li"><div class="ld" style="background:#e24b4a"></div>Outage (≥1 min with 0 requests)</div>
+    <div class="li"><div class="ld" style="background:#2d3748;border:1px solid #374151"></div>No data</div>
+  </div>
+</div>
+
+<div class="card" id="iPanel"></div>
+
+<div class="stats">
+  <div class="sc"><div class="sl">Total Requests (7d)</div><div class="sv" id="s1">—</div><div style="font-size:11px;color:#475569;margin-top:3px" id="s1b"></div></div>
+  <div class="sc"><div class="sl">Outage Minutes</div><div class="sv" id="s2">—</div><div style="font-size:11px;color:#475569;margin-top:3px" id="s2b"></div></div>
+  <div class="sc"><div class="sl">Uptime</div><div class="sv" id="s3">—</div><div style="font-size:11px;color:#475569;margin-top:3px">Minute-level precision</div></div>
+</div>
+
+<div class="footer">Generated: 2026-05-28 · Rapyd NOC · Valitor 3DS</div>
+
+<script>
+const DAYS30=[{"date": "2026-04-29", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-04-30", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-01", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-02", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-03", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-04", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-05", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-06", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-07", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-08", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-09", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-10", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-11", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-12", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-13", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-14", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-15", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-16", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-17", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-18", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-19", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-20", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-21", "gapMinutes": 0, "degradedMinutes": 1, "gaps": [], "degraded": [{"time": "02:37", "count": 3}], "hasData": true}, {"date": "2026-05-22", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-23", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-24", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-25", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-26", "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": [], "hasData": true}, {"date": "2026-05-27", "hasData": false, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}];
+const DAILY=[{"date": "2026-05-20", "total": 479948, "min": 10, "max": 629, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-21", "total": 452684, "min": 3, "max": 585, "gapMinutes": 0, "degradedMinutes": 1, "gaps": [], "degraded": [{"time": "02:37", "count": 3}]}, {"date": "2026-05-22", "total": 425947, "min": 13, "max": 496, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-23", "total": 406081, "min": 11, "max": 502, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-24", "total": 453034, "min": 10, "max": 555, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-25", "total": 501077, "min": 11, "max": 856, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}, {"date": "2026-05-26", "total": 480421, "min": 14, "max": 612, "gapMinutes": 0, "degradedMinutes": 0, "gaps": [], "degraded": []}];
+const TOTAL_REQS=3199192;
+
+function segCol(d){if(!d.hasData)return null;return d.gapMinutes>0?'#e24b4a':'#1d9e75';}
+function segTxt(d){
+  if(!d.hasData) return 'No data';
+  if(d.gapMinutes>0) return '🔴 Outage — '+d.gapMinutes+' min with 0 requests';
+  return '✅ Clean';
+}
+
+const bar=document.getElementById('uBar'),tip=document.getElementById('bTip');
+DAYS30.forEach(d=>{
+  const seg=document.createElement('div');
+  seg.className='seg';
+  const col=segCol(d);
+  seg.style.background=col||'#2d3748';
+  if(!col) seg.style.border='1px solid #374151';
+  seg.addEventListener('mouseenter',()=>{
+    seg.style.opacity='0.7';
+    tip.style.display='block';
+    tip.innerHTML=`<b style="color:#e2e8f0">${d.date}</b><br><span style="color:${col||'#475569'}">${segTxt(d)}</span>`;
+    const sr=seg.getBoundingClientRect(),br=bar.getBoundingClientRect();
+    tip.style.left=Math.max(0,Math.min(sr.left-br.left+sr.width/2-tip.offsetWidth/2,br.width-tip.offsetWidth))+'px';
+  });
+  seg.addEventListener('mouseleave',()=>{seg.style.opacity='1';tip.style.display='none';});
+  bar.appendChild(seg);
+});
+
+const dataDays=DAYS30.filter(d=>d.hasData);
+const totalMin=dataDays.length*1440;
+const gapMin=dataDays.reduce((s,d)=>s+d.gapMinutes,0);
+const pct=((totalMin-gapMin)/totalMin*100).toFixed(3);
+document.getElementById('uPct').textContent=pct+'% uptime · '+dataDays.length+' days monitored';
+
+const badge=document.getElementById('sBadge');
+badge.className=gapMin>0?'badge br':'badge bg';
+badge.textContent=gapMin>0?'Outage detected':'Operational';
+
+// Build all outage events sorted by date + time
+const allEvents=[];
+for(const d of DAILY){
+  for(const g of (d.gaps||[])){
+    allEvents.push({date:d.date, start:g.start, end:g.end, mins:g.minutes});
+  }
+}
+allEvents.sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
+
+const panel=document.getElementById('iPanel');
+if(gapMin===0){
+  panel.innerHTML=`<div class="panel-clean"><span style="font-size:20px;color:#34d399">✓</span><div>
+    <div style="font-size:13px;font-weight:500;color:#34d399">Fully operational</div>
+    <div style="font-size:11px;color:#475569;margin-top:2px">All ${(dataDays.length*1440).toLocaleString()} monitored minutes had traffic.</div>
+  </div></div>`;
+}else{
+  const longest=allEvents.reduce((a,b)=>b.mins>a.mins?b:a,allEvents[0]);
+  const rows=allEvents.map(e=>`<tr>
+    <td class="t-date">${e.date}</td>
+    <td class="t-time">${e.start} UTC</td>
+    <td class="t-time">${e.end} UTC</td>
+    <td class="t-dur">${e.mins} min</td>
+    <td>${e===longest?'<span class="t-tag">longest</span>':''}</td>
+  </tr>`).join('');
+  panel.innerHTML=`<div class="panel-red">
+    <div class="panel-red-title">
+      <span>🔴</span>
+      <span>${allEvents.length} outage event${allEvents.length>1?'s':''} · ${gapMin} zero-request minute${gapMin>1?'s':''} total</span>
+    </div>
+    <table>
+      <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+document.getElementById('s1').textContent=(TOTAL_REQS/1000000).toFixed(2)+'M';
+document.getElementById('s1b').textContent=dataDays.length+' days · '+(dataDays.length*1440).toLocaleString()+' min monitored';
+document.getElementById('s2').textContent=gapMin;
+document.getElementById('s2').className='sv '+(gapMin>0?'r':'g');
+document.getElementById('s2b').textContent=gapMin===0?'No outages detected':gapMin+' min total downtime';
+document.getElementById('s3').textContent=pct+'%';
+document.getElementById('s3').className='sv '+(gapMin===0?'g':'r');
+</script>
+</body>
+</html>
