@@ -45,6 +45,8 @@ td{padding:8px 10px}
 .sv{font-size:1.6rem;font-weight:700;color:#fff}
 .sv.g{color:#34d399}.sv.r{color:#f87171}
 .footer{text-align:center;color:#334155;font-size:11px;margin-top:18px}
+.loading{color:#475569;font-size:13px;padding:20px;text-align:center}
+.err{color:#f87171;font-size:13px;padding:20px}
 </style>
 </head>
 <body>
@@ -56,10 +58,10 @@ td{padding:8px 10px}
     <span class="badge" id="sBadge">—</span>
   </div>
   <div class="bar-wrap">
-    <div class="uptime-bar" id="uBar"></div>
+    <div class="uptime-bar" id="uBar"><div class="loading">Loading…</div></div>
     <div class="tip" id="bTip"></div>
   </div>
-  <div class="bar-labels"><span id="barStart">40 days ago</span><span>Today</span></div>
+  <div class="bar-labels"><span id="barStart">—</span><span>Today</span></div>
   <div class="uptime-pct" id="uPct"></div>
   <div class="legend">
     <div class="li"><div class="ld" style="background:#1d9e75"></div>Clean</div>
@@ -68,7 +70,7 @@ td{padding:8px 10px}
   </div>
 </div>
 
-<div class="card" id="iPanel"></div>
+<div class="card" id="iPanel"><div class="loading">Loading…</div></div>
 
 <div class="stats">
   <div class="sc"><div class="sl">Monitored Days</div><div class="sv" id="s1">—</div><div style="font-size:11px;color:#475569;margin-top:3px" id="s1b"></div></div>
@@ -79,9 +81,6 @@ td{padding:8px 10px}
 <div class="footer" id="footer">Rapyd NOC · Valitor 3DS · Outage = 0 req/min</div>
 
 <script>
-const DAYS40=[{"date": "2026-04-19", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-20", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-21", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-22", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-23", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-24", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-04-25", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-04-26", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-04-27", "gapMinutes": 50, "gaps": [{"start": "10:08", "end": "10:50", "minutes": 41}, {"start": "20:06", "end": "20:16", "minutes": 9}], "hasData": true}, {"date": "2026-04-28", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-04-29", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-04-30", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-01", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-02", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-03", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-04", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-05", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-06", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-07", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-08", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-09", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-10", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-11", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-12", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-13", "gapMinutes": 0, "gaps": [], "hasData": false}, {"date": "2026-05-14", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-15", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-16", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-17", "gapMinutes": 23, "gaps": [{"start": "02:06", "end": "02:30", "minutes": 23}], "hasData": true}, {"date": "2026-05-18", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-19", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-20", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-21", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-22", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-23", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-24", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-25", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-26", "gapMinutes": 0, "gaps": [], "hasData": true}, {"date": "2026-05-27", "gapMinutes": 0, "gaps": [], "hasData": true}];
-const DAILY=[{"date": "2026-04-25", "gapMinutes": 0, "gaps": []}, {"date": "2026-04-26", "gapMinutes": 0, "gaps": []}, {"date": "2026-04-27", "gapMinutes": 50, "gaps": [{"start": "10:08", "end": "10:50", "minutes": 41}, {"start": "20:06", "end": "20:16", "minutes": 9}]}, {"date": "2026-04-28", "gapMinutes": 0, "gaps": []}, {"date": "2026-04-29", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-14", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-15", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-16", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-17", "gapMinutes": 23, "gaps": [{"start": "02:06", "end": "02:30", "minutes": 23}]}, {"date": "2026-05-18", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-19", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-20", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-21", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-22", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-23", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-24", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-25", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-26", "gapMinutes": 0, "gaps": []}, {"date": "2026-05-27", "gapMinutes": 0, "gaps": []}];
-
 function segCol(d){if(!d.hasData)return null;return d.gapMinutes>0?'#e24b4a':'#1d9e75';}
 function segTxt(d){
   if(!d.hasData) return 'No data';
@@ -89,75 +88,94 @@ function segTxt(d){
   return '✅ Clean';
 }
 
-const bar=document.getElementById('uBar'),tip=document.getElementById('bTip');
-DAYS40.forEach(d=>{
-  const seg=document.createElement('div');
-  seg.className='seg';
-  const col=segCol(d);
-  seg.style.background=col||'#2d3748';
-  if(!col) seg.style.border='1px solid #374151';
-  seg.addEventListener('mouseenter',()=>{
-    seg.style.opacity='0.7';
-    tip.style.display='block';
-    tip.innerHTML=`<b style="color:#e2e8f0">${d.date}</b><br><span style="color:${col||'#475569'}">${segTxt(d)}</span>`;
-    const sr=seg.getBoundingClientRect(),br=bar.getBoundingClientRect();
-    tip.style.left=Math.max(0,Math.min(sr.left-br.left+sr.width/2-tip.offsetWidth/2,br.width-tip.offsetWidth))+'px';
+async function init(){
+  let data;
+  try{
+    const r=await fetch('./data.json');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    data=await r.json();
+  }catch(e){
+    document.getElementById('uBar').innerHTML='<div class="err">Failed to load data.json: '+e.message+'</div>';
+    document.getElementById('iPanel').innerHTML='<div class="err">Data unavailable.</div>';
+    return;
+  }
+
+  const DAYS40=data.days;
+  const DAILY=data.daily;
+
+  const bar=document.getElementById('uBar'),tip=document.getElementById('bTip');
+  bar.innerHTML='';
+  DAYS40.forEach(d=>{
+    const seg=document.createElement('div');
+    seg.className='seg';
+    const col=segCol(d);
+    seg.style.background=col||'#2d3748';
+    if(!col) seg.style.border='1px solid #374151';
+    seg.addEventListener('mouseenter',()=>{
+      seg.style.opacity='0.7';
+      tip.style.display='block';
+      tip.innerHTML=`<b style="color:#e2e8f0">${d.date}</b><br><span style="color:${col||'#475569'}">${segTxt(d)}</span>`;
+      const sr=seg.getBoundingClientRect(),br=bar.getBoundingClientRect();
+      tip.style.left=Math.max(0,Math.min(sr.left-br.left+sr.width/2-tip.offsetWidth/2,br.width-tip.offsetWidth))+'px';
+    });
+    seg.addEventListener('mouseleave',()=>{seg.style.opacity='1';tip.style.display='none';});
+    bar.appendChild(seg);
   });
-  seg.addEventListener('mouseleave',()=>{seg.style.opacity='1';tip.style.display='none';});
-  bar.appendChild(seg);
-});
 
-const dataDays=DAYS40.filter(d=>d.hasData);
-const totalMin=dataDays.length*1440;
-const gapMin=dataDays.reduce((s,d)=>s+d.gapMinutes,0);
-const pct=((totalMin-gapMin)/totalMin*100).toFixed(3);
+  const dataDays=DAYS40.filter(d=>d.hasData);
+  const totalMin=dataDays.length*1440;
+  const gapMin=dataDays.reduce((s,d)=>s+d.gapMinutes,0);
+  const pct=((totalMin-gapMin)/totalMin*100).toFixed(3);
 
-document.getElementById('barStart').textContent=DAYS40[0].date;
-document.getElementById('uPct').textContent=pct+'% uptime · '+dataDays.length+' days with data out of '+DAYS40.length+' in window';
-document.getElementById('footer').textContent='Generated: '+new Date().toISOString().slice(0,10)+' · Rapyd NOC · Valitor 3DS · Outage = 0 req/min';
+  document.getElementById('barStart').textContent=DAYS40[0].date;
+  document.getElementById('uPct').textContent=pct+'% uptime · '+dataDays.length+' days with data out of '+DAYS40.length+' in window';
+  document.getElementById('footer').textContent='Generated: '+(data.generatedDate||new Date().toISOString().slice(0,10))+' · Rapyd NOC · Valitor 3DS · Outage = 0 req/min';
 
-const badge=document.getElementById('sBadge');
-badge.className=gapMin>0?'badge br':'badge bg';
-badge.textContent=gapMin>0?'Outage detected':'Operational';
+  const badge=document.getElementById('sBadge');
+  badge.className=gapMin>0?'badge br':'badge bg';
+  badge.textContent=gapMin>0?'Outage detected':'Operational';
 
-const allEvents=[];
-for(const d of DAILY){
-  for(const g of (d.gaps||[])) allEvents.push({date:d.date,start:g.start,end:g.end,mins:g.minutes});
+  const allEvents=[];
+  for(const d of DAILY){
+    for(const g of (d.gaps||[])) allEvents.push({date:d.date,start:g.start,end:g.end,mins:g.minutes});
+  }
+  allEvents.sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
+
+  const panel=document.getElementById('iPanel');
+  if(gapMin===0){
+    panel.innerHTML=`<div class="panel-clean"><span style="font-size:20px;color:#34d399">✓</span><div>
+      <div style="font-size:13px;font-weight:500;color:#34d399">Fully operational</div>
+      <div style="font-size:11px;color:#475569;margin-top:2px">All ${(dataDays.length*1440).toLocaleString()} monitored minutes had traffic.</div>
+    </div></div>`;
+  }else{
+    const longest=allEvents.reduce((a,b)=>b.mins>a.mins?b:a,allEvents[0]);
+    const rows=allEvents.map(e=>`<tr>
+      <td class="t-date">${e.date}</td>
+      <td class="t-time">${e.start} UTC</td>
+      <td class="t-time">${e.end} UTC</td>
+      <td class="t-dur">${e.mins} min</td>
+      <td>${e===longest?'<span class="t-tag">longest</span>':''}</td>
+    </tr>`).join('');
+    panel.innerHTML=`<div class="panel-red">
+      <div class="panel-red-title"><span>🔴</span>
+      <span>${allEvents.length} outage event${allEvents.length>1?'s':''}</span></div>
+      <table>
+        <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  document.getElementById('s1').textContent=dataDays.length;
+  document.getElementById('s1b').textContent='Out of '+DAYS40.length+'-day window';
+  document.getElementById('s2').textContent=gapMin;
+  document.getElementById('s2').className='sv '+(gapMin>0?'r':'g');
+  document.getElementById('s2b').textContent=gapMin===0?'No outages detected':gapMin+' min total downtime';
+  document.getElementById('s3').textContent=pct+'%';
+  document.getElementById('s3').className='sv '+(gapMin===0?'g':'r');
 }
-allEvents.sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
 
-const panel=document.getElementById('iPanel');
-if(gapMin===0){
-  panel.innerHTML=`<div class="panel-clean"><span style="font-size:20px;color:#34d399">✓</span><div>
-    <div style="font-size:13px;font-weight:500;color:#34d399">Fully operational</div>
-    <div style="font-size:11px;color:#475569;margin-top:2px">All ${(dataDays.length*1440).toLocaleString()} monitored minutes had traffic.</div>
-  </div></div>`;
-}else{
-  const longest=allEvents.reduce((a,b)=>b.mins>a.mins?b:a,allEvents[0]);
-  const rows=allEvents.map(e=>`<tr>
-    <td class="t-date">${e.date}</td>
-    <td class="t-time">${e.start} UTC</td>
-    <td class="t-time">${e.end} UTC</td>
-    <td class="t-dur">${e.mins} min</td>
-    <td>${e===longest?'<span class="t-tag">longest</span>':''}</td>
-  </tr>`).join('');
-  panel.innerHTML=`<div class="panel-red">
-    <div class="panel-red-title"><span>🔴</span>
-    <span>${allEvents.length} outage event${allEvents.length>1?'s':''}</span></div>
-    <table>
-      <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>`;
-}
-
-document.getElementById('s1').textContent=dataDays.length;
-document.getElementById('s1b').textContent='Out of '+DAYS40.length+'-day window';
-document.getElementById('s2').textContent=gapMin;
-document.getElementById('s2').className='sv '+(gapMin>0?'r':'g');
-document.getElementById('s2b').textContent=gapMin===0?'No outages detected':gapMin+' min total downtime';
-document.getElementById('s3').textContent=pct+'%';
-document.getElementById('s3').className='sv '+(gapMin===0?'g':'r');
+init();
 </script>
 </body>
 </html>
