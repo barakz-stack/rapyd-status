@@ -258,8 +258,8 @@ function renderStats(DAYS40,DAILY,genDate){
   const{dataDays,maintMin,faultMin,pct}=calcUptime(DAYS40,DAILY);
   document.getElementById('uPct').innerHTML=
     pct+'% uptime &nbsp;·&nbsp; '+dataDays.length+' days with data out of '+DAYS40.length+' in window'
-    +'<br><span id="uMaint" style="font-size:11px;color:#92400e">'
-    +(maintMin>0?maintMin+' min maintenance excluded from uptime calculation':'')
+    +'<br><span style="font-size:11px;color:'+(maintMin>0?'#92400e':'transparent')+'">'
+    +(maintMin>0?maintMin+' min maintenance excluded from uptime calculation':'&nbsp;')
     +'</span>';
   if(genDate)document.getElementById('footer').textContent='Generated: '+genDate+' · Devops SRE · Valitor 3DS · Outage = 0 req/min';
   const badge=document.getElementById('sBadge');
@@ -270,7 +270,8 @@ function renderStats(DAYS40,DAILY,genDate){
   document.getElementById('s2').className='sv '+(faultMin>0?'r':'g');
   document.getElementById('s2b').innerHTML=
     (faultMin===0?'No faults detected':faultMin+' min fault downtime')
-    +'<br><span style="color:#92400e">'+(maintMin>0?maintMin+' min maintenance':'')+'</span>';
+    +'<br><span style="color:'+(maintMin>0?'#92400e':'transparent')+'">'
+    +(maintMin>0?maintMin+' min maintenance':'&nbsp;')+'</span>';
   document.getElementById('s3').textContent=pct+'%';
   document.getElementById('s3').className='sv '+(faultMin===0?'g':'r');
   return{faultMin,maintMin};
