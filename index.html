@@ -91,16 +91,72 @@ tbody tr.maint-row{background:#78350f18}
 <div class="footer" id="footer">Devops SRE · Valitor 3DS · Outage = 0 req/min</div>
 
 <script>
-// ── Maintenance state (persisted in localStorage) ──────────────────────────
-const MAINT_KEY='valitor_maint';
-function getMaint(){try{return JSON.parse(localStorage.getItem(MAINT_KEY)||'{}')}catch{return{}}}
-function gapId(date,start,end){return date+'|'+start+'|'+end}
-function isMaint(date,start,end){return!!getMaint()[gapId(date,start,end)]}
-function toggleMaint(date,start,end){
-  const m=getMaint(),k=gapId(date,start,end);
-  if(m[k])delete m[k];else m[k]=true;
-  localStorage.setItem(MAINT_KEY,JSON.stringify(m));
-  render(window._D40,window._DAILY,window._genDate);
+// ── GitHub token (entered once, stored per-browser for auth only) ──────────
+const TOKEN_KEY='valitor_gh_token';
+function getToken(){return localStorage.getItem(TOKEN_KEY)||'';}
+
+// ── isMaint: reads from in-memory data (source of truth = data.json) ───────
+function isMaint(date,start,end){
+  for(const d of(window._DAILY||[]))
+    if(d.date===date)
+      for(const g of(d.gaps||[]))
+        if(g.start===start&&g.end===end) return!!g.maintenance;
+  return false;
+}
+
+// ── UTF-8-safe base64 helpers for GitHub API ──────────────────────────────
+function b64enc(str){
+  const b=new TextEncoder().encode(str);let s='';
+  b.forEach(c=>s+=String.fromCharCode(c));return btoa(s);
+}
+function b64dec(str){
+  const bin=atob(str),b=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(b);
+}
+
+// ── Toggle maintenance flag — pushes to GitHub, shared with all viewers ────
+async function toggleMaint(date,start,end,btnEl){
+  let token=getToken();
+  if(!token){
+    token=(prompt('Enter a GitHub token with write access to rapyd-status\n(entered once, saved in this browser):')||'').trim();
+    if(!token)return;
+    localStorage.setItem(TOKEN_KEY,token);
+  }
+  const orig=btnEl.innerHTML;
+  btnEl.innerHTML='⏳';btnEl.disabled=true;
+  try{
+    // 1 — fetch current data.json + SHA from GitHub API (always fresh, bypasses CDN)
+    const getR=await fetch('https://api.github.com/repos/barakz-stack/rapyd-status/contents/data.json',
+      {headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json'}});
+    if(!getR.ok){
+      if(getR.status===401||getR.status===403){localStorage.removeItem(TOKEN_KEY);alert('Token invalid or expired — please re-enter next time.');}
+      else alert('GitHub API error: '+getR.status);
+      btnEl.innerHTML=orig;btnEl.disabled=false;return;
+    }
+    const info=await getR.json();
+    const sha=info.sha;
+    const data=JSON.parse(b64dec(info.content.replace(/\n/g,'')));
+
+    // 2 — toggle flag on the matching gap in both `daily` and `days`
+    for(const arr of[data.daily,data.days])
+      for(const d of(arr||[]))
+        if(d.date===date)
+          for(const g of(d.gaps||[]))
+            if(g.start===start&&g.end===end){if(g.maintenance)delete g.maintenance;else g.maintenance=true;}
+
+    // 3 — push updated data.json
+    const putR=await fetch('https://api.github.com/repos/barakz-stack/rapyd-status/contents/data.json',{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+      body:JSON.stringify({message:'Toggle maintenance: '+date+' '+start+'-'+end,content:b64enc(JSON.stringify(data)),sha})
+    });
+    if(!putR.ok){alert('Push failed: '+putR.status);btnEl.innerHTML=orig;btnEl.disabled=false;return;}
+
+    // 4 — update in-memory data and re-render immediately (no reload needed)
+    window._D40=data.days;window._DAILY=data.daily;
+    render(data.days,data.daily,data.generatedDate);
+  }catch(e){alert('Error: '+e.message);btnEl.innerHTML=orig;btnEl.disabled=false;}
 }
 
 // ── Bar segment color ───────────────────────────────────────────────────────
@@ -180,8 +236,8 @@ function render(DAYS40,DAILY,genDate){
       const tag=m?'<span class="t-tag" style="background:#78350f55;color:#fcd34d">maintenance</span>'
                   :(e===longest?'<span class="t-tag">longest</span>':'');
       const btn=m
-        ?`<button class="type-btn type-maint" onclick="toggleMaint('${e.date}','${e.start}','${e.end}')">🟡 Maintenance</button>`
-        :`<button class="type-btn type-fault" onclick="toggleMaint('${e.date}','${e.start}','${e.end}')">🔴 Fault</button>`;
+        ?`<button class="type-btn type-maint" onclick="toggleMaint('${e.date}','${e.start}','${e.end}',this)">🟡 Maintenance</button>`
+        :`<button class="type-btn type-fault" onclick="toggleMaint('${e.date}','${e.start}','${e.end}',this)">🔴 Fault</button>`;
       return`<tr class="${m?'maint-row':''}">
         <td class="t-date">${e.date}</td>
         <td class="t-time">${e.start} UTC</td>
@@ -202,7 +258,7 @@ function render(DAYS40,DAILY,genDate){
         <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th><th>Type</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <div class="maint-note">Click the type button on any row to toggle between Fault and Maintenance · Marks saved in this browser</div>
+      <div class="maint-note">Click the type button to toggle · Changes are shared with your team (GitHub token required on first use) · Others see changes after refreshing</div>
     </div>`;
   }
 
