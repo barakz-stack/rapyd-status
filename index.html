@@ -22,7 +22,7 @@ h1{font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:3px}
 .cnt-badge{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;color:#fca5a5;white-space:nowrap;pointer-events:none;line-height:1;letter-spacing:0}
 .bar-labels{display:flex;justify-content:space-between;margin-top:6px}
 .bar-labels span{font-size:11px;color:#475569}
-.uptime-pct{margin-top:6px;font-size:13px;color:#94a3b8}
+.uptime-pct{margin-top:6px;font-size:13px;color:#94a3b8;min-height:36px}
 .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #2d3748}
 .li{display:flex;align-items:center;gap:5px;font-size:11px;color:#64748b}
 .ld{width:11px;height:11px;border-radius:2px;flex-shrink:0}
@@ -42,7 +42,7 @@ td{padding:8px 10px}
 .t-dur{color:#fca5a5;font-weight:600}
 .t-tag{display:inline-block;font-size:9px;background:#7f1d1d55;color:#fca5a5;padding:1px 7px;border-radius:10px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
-.sc{background:#1e2130;border:1px solid #2d3748;border-radius:10px;padding:14px}
+.sc{background:#1e2130;border:1px solid #2d3748;border-radius:10px;padding:14px;min-height:90px}
 .sl{font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
 .sv{font-size:1.6rem;font-weight:700;color:#fff}
 .sv.g{color:#34d399}.sv.r{color:#f87171}
@@ -256,9 +256,11 @@ function patchSeg(date){
 // ── Stats + badge + footer update (no panel/table touch) ─────────────────────
 function renderStats(DAYS40,DAILY,genDate){
   const{dataDays,maintMin,faultMin,pct}=calcUptime(DAYS40,DAILY);
-  let uptimeLine=pct+'% uptime · '+dataDays.length+' days with data out of '+DAYS40.length+' in window';
-  if(maintMin>0)uptimeLine+=' · '+maintMin+' min maintenance excluded';
-  document.getElementById('uPct').textContent=uptimeLine;
+  document.getElementById('uPct').innerHTML=
+    pct+'% uptime &nbsp;·&nbsp; '+dataDays.length+' days with data out of '+DAYS40.length+' in window'
+    +'<br><span id="uMaint" style="font-size:11px;color:#92400e">'
+    +(maintMin>0?maintMin+' min maintenance excluded from uptime calculation':'')
+    +'</span>';
   if(genDate)document.getElementById('footer').textContent='Generated: '+genDate+' · Devops SRE · Valitor 3DS · Outage = 0 req/min';
   const badge=document.getElementById('sBadge');
   if(faultMin>0){badge.className='badge br';badge.textContent='Outage detected';}
@@ -266,9 +268,9 @@ function renderStats(DAYS40,DAILY,genDate){
   else{badge.className='badge bg';badge.textContent='Operational';}
   document.getElementById('s2').textContent=faultMin;
   document.getElementById('s2').className='sv '+(faultMin>0?'r':'g');
-  let s2b=faultMin===0?'No faults detected':faultMin+' min fault downtime';
-  if(maintMin>0)s2b+=' · '+maintMin+' min maintenance';
-  document.getElementById('s2b').textContent=s2b;
+  document.getElementById('s2b').innerHTML=
+    (faultMin===0?'No faults detected':faultMin+' min fault downtime')
+    +'<br><span style="color:#92400e">'+(maintMin>0?maintMin+' min maintenance':'')+'</span>';
   document.getElementById('s3').textContent=pct+'%';
   document.getElementById('s3').className='sv '+(faultMin===0?'g':'r');
   return{faultMin,maintMin};
