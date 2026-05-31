@@ -78,7 +78,7 @@ td{padding:8px 10px}
   <div class="sc"><div class="sl">Uptime</div><div class="sv" id="s3">—</div><div style="font-size:11px;color:#475569;margin-top:3px">Minute-level precision</div></div>
 </div>
 
-<div class="footer" id="footer">Rapyd NOC · Valitor 3DS · Outage = 0 req/min</div>
+<div class="footer" id="footer">Devops SRE · Valitor 3DS · Outage = 0 req/min</div>
 
 <script>
 function segCol(d){if(!d.hasData)return null;return d.gapMinutes>0?'#e24b4a':'#1d9e75';}
@@ -129,7 +129,7 @@ async function init(){
 
   document.getElementById('barStart').textContent=DAYS40[0].date;
   document.getElementById('uPct').textContent=pct+'% uptime · '+dataDays.length+' days with data out of '+DAYS40.length+' in window';
-  document.getElementById('footer').textContent='Generated: '+(data.generatedDate||new Date().toISOString().slice(0,10))+' · Rapyd NOC · Valitor 3DS · Outage = 0 req/min';
+  document.getElementById('footer').textContent='Generated: '+(data.generatedDate||new Date().toISOString().slice(0,10))+' · Devops SRE · Valitor 3DS · Outage = 0 req/min';
 
   const badge=document.getElementById('sBadge');
   badge.className=gapMin>0?'badge br':'badge bg';
