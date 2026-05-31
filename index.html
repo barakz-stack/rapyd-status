@@ -140,12 +140,16 @@ async function toggleMaint(date,start,end,btnEl){
     const sha=info.sha;
     const data=JSON.parse(b64dec(info.content.replace(/\n/g,'')));
 
-    // 2 — toggle flag on the matching gap in both `daily` and `days`
+    // 2 — toggle flag on the matching gap in both `daily` and `days`; capture new state
+    let newMaint=false;
     for(const arr of[data.daily,data.days])
       for(const d of(arr||[]))
         if(d.date===date)
           for(const g of(d.gaps||[]))
-            if(g.start===start&&g.end===end){if(g.maintenance)delete g.maintenance;else g.maintenance=true;}
+            if(g.start===start&&g.end===end){
+              if(g.maintenance){delete g.maintenance;}else{g.maintenance=true;}
+              if(arr===data.daily)newMaint=!!g.maintenance;
+            }
 
     // 3 — push updated data.json
     const putR=await fetch('https://api.github.com/repos/barakz-stack/rapyd-status/contents/data.json',{
@@ -155,11 +159,11 @@ async function toggleMaint(date,start,end,btnEl){
     });
     if(!putR.ok){alert('Push failed: '+putR.status);btnEl.innerHTML=orig;btnEl.disabled=false;return;}
 
-    // 4 — update in-memory data; surgically patch only what changed (no table rebuild)
+    // 4 — update in-memory data; surgically patch only the affected segment + row
     window._D40=data.days;window._DAILY=data.daily;
-    renderBar(data.days);
+    patchSeg(date);
     const{faultMin}=renderStats(data.days,data.daily,window._genDate);
-    patchRow(date,start,end,faultMin);
+    patchRow(date,start,end,faultMin,newMaint);
   }catch(e){alert('Error: '+e.message);btnEl.innerHTML=orig;btnEl.disabled=false;}
 }
 
@@ -202,33 +206,51 @@ function calcUptime(DAYS40,DAILY){
   return{dataDays,maintMin,faultMin,pct};
 }
 
-// ── Bar rendering only (no panel touch) ──────────────────────────────────────
+// ── Apply visual style to a single segment element ───────────────────────────
+function applySegStyle(seg,d){
+  const st=segStyle(d);
+  seg.style.background=st.bg;
+  seg.style.opacity=st.opacity;
+  seg.style.border=st.border||'';
+  const existing=seg.querySelector('.cnt-badge');
+  if(existing)existing.remove();
+  const fc=segFaultCount(d);
+  if(fc>=2){
+    const badge=document.createElement('span');
+    badge.className='cnt-badge';
+    badge.textContent='×'+fc;
+    seg.appendChild(badge);
+  }
+}
+
+// ── Bar rendering — called once on init, tooltips look up live data ───────────
 function renderBar(DAYS40){
   const bar=document.getElementById('uBar'),tip=document.getElementById('bTip');
   bar.innerHTML='';
   DAYS40.forEach(d=>{
     const seg=document.createElement('div');
     seg.className='seg';
-    const st=segStyle(d);
-    seg.style.background=st.bg;
-    seg.style.opacity=st.opacity;
-    if(st.border)seg.style.border=st.border;
-    const fc=segFaultCount(d);
-    if(fc>=2){
-      const badge=document.createElement('span');
-      badge.className='cnt-badge';
-      badge.textContent='×'+fc;
-      seg.appendChild(badge);
-    }
-    seg.addEventListener('mouseenter',()=>{
+    seg.id='seg-'+d.date;
+    applySegStyle(seg,d);
+    seg.addEventListener('mouseenter',function(){
+      const live=window._D40.find(x=>x.date===d.date)||d;
+      const st=segStyle(live);
       tip.style.display='block';
-      tip.innerHTML=`<b style="color:#e2e8f0">${d.date}</b><br><span style="color:${st.bg}">${segTxt(d)}</span>`;
-      const sr=seg.getBoundingClientRect(),br=bar.getBoundingClientRect();
+      tip.innerHTML=`<b style="color:#e2e8f0">${live.date}</b><br><span style="color:${st.bg}">${segTxt(live)}</span>`;
+      const sr=this.getBoundingClientRect(),br=bar.getBoundingClientRect();
       tip.style.left=Math.max(0,Math.min(sr.left-br.left+sr.width/2-tip.offsetWidth/2,br.width-tip.offsetWidth))+'px';
     });
     seg.addEventListener('mouseleave',()=>{tip.style.display='none';});
     bar.appendChild(seg);
   });
+}
+
+// ── Patch one bar segment in-place after toggle (no bar rebuild) ──────────────
+function patchSeg(date){
+  const seg=document.getElementById('seg-'+date);
+  if(!seg)return;
+  const d=window._D40.find(x=>x.date===date);
+  if(d)applySegStyle(seg,d);
 }
 
 // ── Stats + badge + footer update (no panel/table touch) ─────────────────────
@@ -256,8 +278,7 @@ function renderStats(DAYS40,DAILY,genDate){
 function rowId(date,start,end){return'r-'+date+'-'+start.replace(/:/g,'')+'-'+end.replace(/:/g,'');}
 
 // ── Patch one row + panel header after toggle (zero table rebuild) ────────────
-function patchRow(date,start,end,faultMin){
-  const m=isMaint(date,start,end);
+function patchRow(date,start,end,faultMin,m){
   const row=document.getElementById(rowId(date,start,end));
   if(row){
     row.className=m?'maint-row':'';
