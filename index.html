@@ -30,7 +30,7 @@ h1{font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:3px}
 .panel-clean{background:#064e3b22;border:1px solid #064e3b88;border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px}
 .panel-red{background:#7f1d1d22;border:1px solid #7f1d1d66;border-radius:8px;padding:14px 16px}
 .panel-red-title{color:#f87171;font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-table{width:100%;border-collapse:collapse;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
 thead tr{border-bottom:1px solid #3d1f1f}
 th{text-align:left;padding:6px 10px;color:#7f3f3f;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:0.04em}
 tbody tr{border-bottom:1px solid #2a1515}
@@ -286,7 +286,9 @@ function patchRow(date,start,end,faultMin,m){
   if(row){
     row.className=m?'maint-row':'';
     row.cells[3].style.color=m?'#fbbf24':'';
-    row.cells[4].innerHTML=m?'<span class="t-tag" style="background:#78350f55;color:#fcd34d">maintenance</span>':'';
+    row.cells[4].innerHTML=m
+      ?'<span class="t-tag" style="background:#78350f55;color:#fcd34d">maintenance</span>'
+      :'<span class="t-tag" style="visibility:hidden">maintenance</span>';
     const btn=row.cells[5].querySelector('.type-btn');
     if(btn){btn.className='type-btn '+(m?'type-maint':'type-fault');btn.innerHTML=m?'🟡 Maintenance':'🔴 Fault';btn.disabled=false;}
   }
@@ -322,7 +324,8 @@ function renderPanel(DAYS40,DAILY){
   const rows=allEvents.map(e=>{
     const m=e.maint;
     const tag=m?'<span class="t-tag" style="background:#78350f55;color:#fcd34d">maintenance</span>'
-                :(e===longest?'<span class="t-tag">longest</span>':'');
+                :(e===longest?'<span class="t-tag">longest</span>'
+                :'<span class="t-tag" style="visibility:hidden">maintenance</span>');
     const btn=m
       ?`<button class="type-btn type-maint" onclick="toggleMaint('${e.date}','${e.start}','${e.end}',this)">🟡 Maintenance</button>`
       :`<button class="type-btn type-fault" onclick="toggleMaint('${e.date}','${e.start}','${e.end}',this)">🔴 Fault</button>`;
@@ -341,7 +344,7 @@ function renderPanel(DAYS40,DAILY){
   panel.innerHTML=`<div id="panelWrap" class="${faultMin>0?'panel-red':'panel-amber'}">
     <div id="panelTitle" class="${faultMin>0?'panel-red-title':'panel-amber-title'}">${panelTitle}</div>
     <table>
-      <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th><th>Type</th></tr></thead>
+      <thead><tr><th style="width:100px">Date</th><th style="width:90px">Start</th><th style="width:90px">End</th><th style="width:80px">Duration</th><th style="width:100px"></th><th style="width:140px">Type</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div class="maint-note">Click the type button to toggle · Changes are shared with your team (GitHub token required on first use) · Others see changes after refreshing</div>
