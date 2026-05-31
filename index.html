@@ -47,6 +47,15 @@ td{padding:8px 10px}
 .footer{text-align:center;color:#334155;font-size:11px;margin-top:18px}
 .loading{color:#475569;font-size:13px;padding:20px;text-align:center}
 .err{color:#f87171;font-size:13px;padding:20px}
+.bm{background:#92400e;color:#fcd34d}
+.panel-amber{background:#78350f22;border:1px solid #92400e66;border-radius:8px;padding:14px 16px}
+.panel-amber-title{color:#fbbf24;font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.type-btn{font-size:10px;padding:2px 9px;border-radius:10px;cursor:pointer;border:none;font-weight:600;transition:all 0.15s;line-height:18px}
+.type-fault{background:#7f1d1d55;color:#fca5a5}.type-fault:hover{background:#7f1d1d99}
+.type-maint{background:#78350f88;color:#fcd34d}.type-maint:hover{background:#78350fbb}
+tbody tr.maint-row td{opacity:0.7}
+tbody tr.maint-row{background:#78350f18}
+.maint-note{font-size:10px;color:#64748b;margin-top:10px;text-align:right}
 </style>
 </head>
 <body>
@@ -65,7 +74,8 @@ td{padding:8px 10px}
   <div class="uptime-pct" id="uPct"></div>
   <div class="legend">
     <div class="li"><div class="ld" style="background:#1d9e75"></div>Clean</div>
-    <div class="li"><div class="ld" style="background:#e24b4a"></div>Outage (≥1 min with 0 requests)</div>
+    <div class="li"><div class="ld" style="background:#e24b4a"></div>Outage (technical fault)</div>
+    <div class="li"><div class="ld" style="background:#d97706"></div>Maintenance (excluded from uptime)</div>
     <div class="li"><div class="ld" style="background:#2d3748;border:1px solid #374151"></div>No data</div>
   </div>
 </div>
@@ -81,28 +91,35 @@ td{padding:8px 10px}
 <div class="footer" id="footer">Devops SRE · Valitor 3DS · Outage = 0 req/min</div>
 
 <script>
-function segCol(d){if(!d.hasData)return null;return d.gapMinutes>0?'#e24b4a':'#1d9e75';}
-function segTxt(d){
-  if(!d.hasData) return 'No data';
-  if(d.gapMinutes>0) return '🔴 Outage — '+d.gapMinutes+' min with 0 requests';
-  return '✅ Clean';
+// ── Maintenance state (persisted in localStorage) ──────────────────────────
+const MAINT_KEY='valitor_maint';
+function getMaint(){try{return JSON.parse(localStorage.getItem(MAINT_KEY)||'{}')}catch{return{}}}
+function gapId(date,start,end){return date+'|'+start+'|'+end}
+function isMaint(date,start,end){return!!getMaint()[gapId(date,start,end)]}
+function toggleMaint(date,start,end){
+  const m=getMaint(),k=gapId(date,start,end);
+  if(m[k])delete m[k];else m[k]=true;
+  localStorage.setItem(MAINT_KEY,JSON.stringify(m));
+  render(window._D40,window._DAILY,window._genDate);
 }
 
-async function init(){
-  let data;
-  try{
-    const r=await fetch('./data.json');
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    data=await r.json();
-  }catch(e){
-    document.getElementById('uBar').innerHTML='<div class="err">Failed to load data.json: '+e.message+'</div>';
-    document.getElementById('iPanel').innerHTML='<div class="err">Data unavailable.</div>';
-    return;
-  }
+// ── Bar segment color ───────────────────────────────────────────────────────
+function segCol(d){
+  if(!d.hasData)return null;
+  if(!d.gapMinutes)return'#1d9e75';
+  const allM=d.gaps.every(g=>isMaint(d.date,g.start,g.end));
+  return allM?'#d97706':'#e24b4a';
+}
+function segTxt(d){
+  if(!d.hasData)return'No data';
+  if(!d.gapMinutes)return'✅ Clean';
+  const allM=d.gaps.every(g=>isMaint(d.date,g.start,g.end));
+  return allM?'🟡 Maintenance — '+d.gapMinutes+' min':'🔴 Outage — '+d.gapMinutes+' min with 0 requests';
+}
 
-  const DAYS40=data.days;
-  const DAILY=data.daily;
-
+// ── Main render (called on load and on every toggle) ────────────────────────
+function render(DAYS40,DAILY,genDate){
+  // Uptime bar
   const bar=document.getElementById('uBar'),tip=document.getElementById('bTip');
   bar.innerHTML='';
   DAYS40.forEach(d=>{
@@ -110,7 +127,7 @@ async function init(){
     seg.className='seg';
     const col=segCol(d);
     seg.style.background=col||'#2d3748';
-    if(!col) seg.style.border='1px solid #374151';
+    if(!col)seg.style.border='1px solid #374151';
     seg.addEventListener('mouseenter',()=>{
       seg.style.opacity='0.7';
       tip.style.display='block';
@@ -122,57 +139,100 @@ async function init(){
     bar.appendChild(seg);
   });
 
+  // Uptime calculation — maintenance minutes excluded from fault count
   const dataDays=DAYS40.filter(d=>d.hasData);
   const totalMin=dataDays.length*1440;
-  const gapMin=dataDays.reduce((s,d)=>s+d.gapMinutes,0);
-  const pct=((totalMin-gapMin)/totalMin*100).toFixed(3);
+  const allGapMin=dataDays.reduce((s,d)=>s+d.gapMinutes,0);
+  const maintMin=dataDays.reduce((s,d)=>s+d.gaps.filter(g=>isMaint(d.date,g.start,g.end)).reduce((gs,g)=>gs+g.minutes,0),0);
+  const faultMin=allGapMin-maintMin;
+  const pct=totalMin>0?((totalMin-faultMin)/totalMin*100).toFixed(3):'—';
 
   document.getElementById('barStart').textContent=DAYS40[0].date;
-  document.getElementById('uPct').textContent=pct+'% uptime · '+dataDays.length+' days with data out of '+DAYS40.length+' in window';
-  document.getElementById('footer').textContent='Generated: '+(data.generatedDate||new Date().toISOString().slice(0,10))+' · Devops SRE · Valitor 3DS · Outage = 0 req/min';
+  let uptimeLine=pct+'% uptime · '+dataDays.length+' days with data out of '+DAYS40.length+' in window';
+  if(maintMin>0)uptimeLine+=' · '+maintMin+' min maintenance excluded';
+  document.getElementById('uPct').textContent=uptimeLine;
+  document.getElementById('footer').textContent='Generated: '+(genDate||'—')+' · Devops SRE · Valitor 3DS · Outage = 0 req/min';
 
+  // Badge
   const badge=document.getElementById('sBadge');
-  badge.className=gapMin>0?'badge br':'badge bg';
-  badge.textContent=gapMin>0?'Outage detected':'Operational';
+  if(faultMin>0){badge.className='badge br';badge.textContent='Outage detected';}
+  else if(maintMin>0){badge.className='badge bm';badge.textContent='Maintenance';}
+  else{badge.className='badge bg';badge.textContent='Operational';}
 
+  // Outage events panel — all historical gaps from DAILY
   const allEvents=[];
-  for(const d of DAILY){
-    for(const g of (d.gaps||[])) allEvents.push({date:d.date,start:g.start,end:g.end,mins:g.minutes});
-  }
+  for(const d of DAILY)
+    for(const g of(d.gaps||[]))
+      allEvents.push({date:d.date,start:g.start,end:g.end,mins:g.minutes,maint:isMaint(d.date,g.start,g.end)});
   allEvents.sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
 
   const panel=document.getElementById('iPanel');
-  if(gapMin===0){
+  if(!allEvents.length){
     panel.innerHTML=`<div class="panel-clean"><span style="font-size:20px;color:#34d399">✓</span><div>
       <div style="font-size:13px;font-weight:500;color:#34d399">Fully operational</div>
       <div style="font-size:11px;color:#475569;margin-top:2px">All ${(dataDays.length*1440).toLocaleString()} monitored minutes had traffic.</div>
     </div></div>`;
-  }else{
-    const longest=allEvents.reduce((a,b)=>b.mins>a.mins?b:a,allEvents[0]);
-    const rows=allEvents.map(e=>`<tr>
-      <td class="t-date">${e.date}</td>
-      <td class="t-time">${e.start} UTC</td>
-      <td class="t-time">${e.end} UTC</td>
-      <td class="t-dur">${e.mins} min</td>
-      <td>${e===longest?'<span class="t-tag">longest</span>':''}</td>
-    </tr>`).join('');
-    panel.innerHTML=`<div class="panel-red">
-      <div class="panel-red-title"><span>🔴</span>
-      <span>${allEvents.length} outage event${allEvents.length>1?'s':''}</span></div>
+  } else {
+    const faultEvents=allEvents.filter(e=>!e.maint);
+    const longest=faultEvents.length?faultEvents.reduce((a,b)=>b.mins>a.mins?b:a,faultEvents[0]):null;
+    const rows=allEvents.map(e=>{
+      const m=e.maint;
+      const tag=m?'<span class="t-tag" style="background:#78350f55;color:#fcd34d">maintenance</span>'
+                  :(e===longest?'<span class="t-tag">longest</span>':'');
+      const btn=m
+        ?`<button class="type-btn type-maint" onclick="toggleMaint('${e.date}','${e.start}','${e.end}')">🟡 Maintenance</button>`
+        :`<button class="type-btn type-fault" onclick="toggleMaint('${e.date}','${e.start}','${e.end}')">🔴 Fault</button>`;
+      return`<tr class="${m?'maint-row':''}">
+        <td class="t-date">${e.date}</td>
+        <td class="t-time">${e.start} UTC</td>
+        <td class="t-time">${e.end} UTC</td>
+        <td class="t-dur" style="${m?'color:#fbbf24':''}">${e.mins} min</td>
+        <td>${tag}</td>
+        <td>${btn}</td>
+      </tr>`;
+    }).join('');
+    const panelTitle=faultMin>0
+      ?`<span>🔴</span><span>${faultEvents.length} fault event${faultEvents.length!==1?'s':''}</span>`
+      :`<span>🟡</span><span>All events marked as maintenance</span>`;
+    const panelClass=faultMin>0?'panel-red':'panel-amber';
+    const titleClass=faultMin>0?'panel-red-title':'panel-amber-title';
+    panel.innerHTML=`<div class="${panelClass}">
+      <div class="${titleClass}">${panelTitle}</div>
       <table>
-        <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th><th>Type</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
+      <div class="maint-note">Click the type button on any row to toggle between Fault and Maintenance · Marks saved in this browser</div>
     </div>`;
   }
 
+  // Stats cards
   document.getElementById('s1').textContent=dataDays.length;
   document.getElementById('s1b').textContent='Out of '+DAYS40.length+'-day window';
-  document.getElementById('s2').textContent=gapMin;
-  document.getElementById('s2').className='sv '+(gapMin>0?'r':'g');
-  document.getElementById('s2b').textContent=gapMin===0?'No outages detected':gapMin+' min total downtime';
+  document.getElementById('s2').textContent=faultMin;
+  document.getElementById('s2').className='sv '+(faultMin>0?'r':'g');
+  let s2b=faultMin===0?'No faults detected':faultMin+' min fault downtime';
+  if(maintMin>0)s2b+=' · '+maintMin+' min maintenance';
+  document.getElementById('s2b').textContent=s2b;
   document.getElementById('s3').textContent=pct+'%';
-  document.getElementById('s3').className='sv '+(gapMin===0?'g':'r');
+  document.getElementById('s3').className='sv '+(faultMin===0?'g':'r');
+}
+
+async function init(){
+  let data;
+  try{
+    const r=await fetch('./data.json');
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    data=await r.json();
+  }catch(e){
+    document.getElementById('uBar').innerHTML='<div class="err">Failed to load data.json: '+e.message+'</div>';
+    document.getElementById('iPanel').innerHTML='<div class="err">Data unavailable.</div>';
+    return;
+  }
+  window._D40=data.days;
+  window._DAILY=data.daily;
+  window._genDate=data.generatedDate;
+  render(data.days,data.daily,data.generatedDate);
 }
 
 init();
