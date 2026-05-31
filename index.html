@@ -153,9 +153,11 @@ async function toggleMaint(date,start,end,btnEl){
     });
     if(!putR.ok){alert('Push failed: '+putR.status);btnEl.innerHTML=orig;btnEl.disabled=false;return;}
 
-    // 4 — update in-memory data and re-render immediately (no reload needed)
+    // 4 — update in-memory data and re-render (preserve scroll position)
     window._D40=data.days;window._DAILY=data.daily;
+    const sy=window.scrollY;
     render(data.days,data.daily,data.generatedDate);
+    window.scrollTo(0,sy);
   }catch(e){alert('Error: '+e.message);btnEl.innerHTML=orig;btnEl.disabled=false;}
 }
 
