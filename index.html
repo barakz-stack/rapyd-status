@@ -155,11 +155,11 @@ async function toggleMaint(date,start,end,btnEl){
     });
     if(!putR.ok){alert('Push failed: '+putR.status);btnEl.innerHTML=orig;btnEl.disabled=false;return;}
 
-    // 4 — update in-memory data and re-render (preserve scroll position)
+    // 4 — update in-memory data; surgically patch only what changed (no table rebuild)
     window._D40=data.days;window._DAILY=data.daily;
-    const sy=window.scrollY;
-    render(data.days,data.daily,data.generatedDate);
-    window.scrollTo(0,sy);
+    renderBar(data.days);
+    const{faultMin}=renderStats(data.days,data.daily,window._genDate);
+    patchRow(date,start,end,faultMin);
   }catch(e){alert('Error: '+e.message);btnEl.innerHTML=orig;btnEl.disabled=false;}
 }
 
@@ -191,9 +191,19 @@ function segTxt(d){
   return parts.join(' · ');
 }
 
-// ── Main render (called on load and on every toggle) ────────────────────────
-function render(DAYS40,DAILY,genDate){
-  // Uptime bar
+// ── Uptime calculation (shared) ───────────────────────────────────────────────
+function calcUptime(DAYS40,DAILY){
+  const dataDays=DAYS40.filter(d=>d.hasData);
+  const totalMin=dataDays.length*1440;
+  const allGapMin=dataDays.reduce((s,d)=>s+d.gapMinutes,0);
+  const maintMin=dataDays.reduce((s,d)=>s+d.gaps.filter(g=>isMaint(d.date,g.start,g.end)).reduce((gs,g)=>gs+g.minutes,0),0);
+  const faultMin=allGapMin-maintMin;
+  const pct=totalMin>0?((totalMin-faultMin)/totalMin*100).toFixed(3):'—';
+  return{dataDays,maintMin,faultMin,pct};
+}
+
+// ── Bar rendering only (no panel touch) ──────────────────────────────────────
+function renderBar(DAYS40){
   const bar=document.getElementById('uBar'),tip=document.getElementById('bTip');
   bar.innerHTML='';
   DAYS40.forEach(d=>{
@@ -203,7 +213,6 @@ function render(DAYS40,DAILY,genDate){
     seg.style.background=st.bg;
     seg.style.opacity=st.opacity;
     if(st.border)seg.style.border=st.border;
-    // count badge for 2+ faults on same day
     const fc=segFaultCount(d);
     if(fc>=2){
       const badge=document.createElement('span');
@@ -220,77 +229,19 @@ function render(DAYS40,DAILY,genDate){
     seg.addEventListener('mouseleave',()=>{tip.style.display='none';});
     bar.appendChild(seg);
   });
+}
 
-  // Uptime calculation — maintenance minutes excluded from fault count
-  const dataDays=DAYS40.filter(d=>d.hasData);
-  const totalMin=dataDays.length*1440;
-  const allGapMin=dataDays.reduce((s,d)=>s+d.gapMinutes,0);
-  const maintMin=dataDays.reduce((s,d)=>s+d.gaps.filter(g=>isMaint(d.date,g.start,g.end)).reduce((gs,g)=>gs+g.minutes,0),0);
-  const faultMin=allGapMin-maintMin;
-  const pct=totalMin>0?((totalMin-faultMin)/totalMin*100).toFixed(3):'—';
-
-  document.getElementById('barStart').textContent=DAYS40[0].date;
+// ── Stats + badge + footer update (no panel/table touch) ─────────────────────
+function renderStats(DAYS40,DAILY,genDate){
+  const{dataDays,maintMin,faultMin,pct}=calcUptime(DAYS40,DAILY);
   let uptimeLine=pct+'% uptime · '+dataDays.length+' days with data out of '+DAYS40.length+' in window';
   if(maintMin>0)uptimeLine+=' · '+maintMin+' min maintenance excluded';
   document.getElementById('uPct').textContent=uptimeLine;
-  document.getElementById('footer').textContent='Generated: '+(genDate||'—')+' · Devops SRE · Valitor 3DS · Outage = 0 req/min';
-
-  // Badge
+  if(genDate)document.getElementById('footer').textContent='Generated: '+genDate+' · Devops SRE · Valitor 3DS · Outage = 0 req/min';
   const badge=document.getElementById('sBadge');
   if(faultMin>0){badge.className='badge br';badge.textContent='Outage detected';}
   else if(maintMin>0){badge.className='badge bm';badge.textContent='Maintenance';}
   else{badge.className='badge bg';badge.textContent='Operational';}
-
-  // Outage events panel — all historical gaps from DAILY
-  const allEvents=[];
-  for(const d of DAILY)
-    for(const g of(d.gaps||[]))
-      allEvents.push({date:d.date,start:g.start,end:g.end,mins:g.minutes,maint:isMaint(d.date,g.start,g.end)});
-  allEvents.sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
-
-  const panel=document.getElementById('iPanel');
-  if(!allEvents.length){
-    panel.innerHTML=`<div class="panel-clean"><span style="font-size:20px;color:#34d399">✓</span><div>
-      <div style="font-size:13px;font-weight:500;color:#34d399">Fully operational</div>
-      <div style="font-size:11px;color:#475569;margin-top:2px">All ${(dataDays.length*1440).toLocaleString()} monitored minutes had traffic.</div>
-    </div></div>`;
-  } else {
-    const faultEvents=allEvents.filter(e=>!e.maint);
-    const longest=faultEvents.length?faultEvents.reduce((a,b)=>b.mins>a.mins?b:a,faultEvents[0]):null;
-    const rows=allEvents.map(e=>{
-      const m=e.maint;
-      const tag=m?'<span class="t-tag" style="background:#78350f55;color:#fcd34d">maintenance</span>'
-                  :(e===longest?'<span class="t-tag">longest</span>':'');
-      const btn=m
-        ?`<button class="type-btn type-maint" onclick="toggleMaint('${e.date}','${e.start}','${e.end}',this)">🟡 Maintenance</button>`
-        :`<button class="type-btn type-fault" onclick="toggleMaint('${e.date}','${e.start}','${e.end}',this)">🔴 Fault</button>`;
-      return`<tr class="${m?'maint-row':''}">
-        <td class="t-date">${e.date}</td>
-        <td class="t-time">${e.start} UTC</td>
-        <td class="t-time">${e.end} UTC</td>
-        <td class="t-dur" style="${m?'color:#fbbf24':''}">${e.mins} min</td>
-        <td>${tag}</td>
-        <td>${btn}</td>
-      </tr>`;
-    }).join('');
-    const panelTitle=faultMin>0
-      ?`<span>🔴</span><span>${faultEvents.length} fault event${faultEvents.length!==1?'s':''}</span>`
-      :`<span>🟡</span><span>All events marked as maintenance</span>`;
-    const panelClass=faultMin>0?'panel-red':'panel-amber';
-    const titleClass=faultMin>0?'panel-red-title':'panel-amber-title';
-    panel.innerHTML=`<div class="${panelClass}">
-      <div class="${titleClass}">${panelTitle}</div>
-      <table>
-        <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th><th>Type</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="maint-note">Click the type button to toggle · Changes are shared with your team (GitHub token required on first use) · Others see changes after refreshing</div>
-    </div>`;
-  }
-
-  // Stats cards
-  document.getElementById('s1').textContent=dataDays.length;
-  document.getElementById('s1b').textContent='Out of '+DAYS40.length+'-day window';
   document.getElementById('s2').textContent=faultMin;
   document.getElementById('s2').className='sv '+(faultMin>0?'r':'g');
   let s2b=faultMin===0?'No faults detected':faultMin+' min fault downtime';
@@ -298,6 +249,90 @@ function render(DAYS40,DAILY,genDate){
   document.getElementById('s2b').textContent=s2b;
   document.getElementById('s3').textContent=pct+'%';
   document.getElementById('s3').className='sv '+(faultMin===0?'g':'r');
+  return{faultMin,maintMin};
+}
+
+// ── Row ID helper ─────────────────────────────────────────────────────────────
+function rowId(date,start,end){return'r-'+date+'-'+start.replace(/:/g,'')+'-'+end.replace(/:/g,'');}
+
+// ── Patch one row + panel header after toggle (zero table rebuild) ────────────
+function patchRow(date,start,end,faultMin){
+  const m=isMaint(date,start,end);
+  const row=document.getElementById(rowId(date,start,end));
+  if(row){
+    row.className=m?'maint-row':'';
+    row.cells[3].style.color=m?'#fbbf24':'';
+    row.cells[4].innerHTML=m?'<span class="t-tag" style="background:#78350f55;color:#fcd34d">maintenance</span>':'';
+    const btn=row.cells[5].querySelector('.type-btn');
+    if(btn){btn.className='type-btn '+(m?'type-maint':'type-fault');btn.innerHTML=m?'🟡 Maintenance':'🔴 Fault';btn.disabled=false;}
+  }
+  const wrap=document.getElementById('panelWrap'),title=document.getElementById('panelTitle');
+  if(wrap&&title){
+    const faultEvts=document.querySelectorAll('#iPanel tbody tr:not(.maint-row)').length;
+    wrap.className=faultMin>0?'panel-red':'panel-amber';
+    title.className=faultMin>0?'panel-red-title':'panel-amber-title';
+    title.innerHTML=faultMin>0
+      ?`<span>🔴</span><span>${faultEvts} fault event${faultEvts!==1?'s':''}</span>`
+      :`<span>🟡</span><span>All events marked as maintenance</span>`;
+  }
+}
+
+// ── Build events panel HTML — called once on init only ────────────────────────
+function renderPanel(DAYS40,DAILY){
+  const allEvents=[];
+  for(const d of DAILY)
+    for(const g of(d.gaps||[]))
+      allEvents.push({date:d.date,start:g.start,end:g.end,mins:g.minutes,maint:isMaint(d.date,g.start,g.end)});
+  allEvents.sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
+  const{dataDays,faultMin}=calcUptime(DAYS40,DAILY);
+  const panel=document.getElementById('iPanel');
+  if(!allEvents.length){
+    panel.innerHTML=`<div class="panel-clean"><span style="font-size:20px;color:#34d399">✓</span><div>
+      <div style="font-size:13px;font-weight:500;color:#34d399">Fully operational</div>
+      <div style="font-size:11px;color:#475569;margin-top:2px">All ${(dataDays.length*1440).toLocaleString()} monitored minutes had traffic.</div>
+    </div></div>`;
+    return;
+  }
+  const faultEvents=allEvents.filter(e=>!e.maint);
+  const longest=faultEvents.length?faultEvents.reduce((a,b)=>b.mins>a.mins?b:a,faultEvents[0]):null;
+  const rows=allEvents.map(e=>{
+    const m=e.maint;
+    const tag=m?'<span class="t-tag" style="background:#78350f55;color:#fcd34d">maintenance</span>'
+                :(e===longest?'<span class="t-tag">longest</span>':'');
+    const btn=m
+      ?`<button class="type-btn type-maint" onclick="toggleMaint('${e.date}','${e.start}','${e.end}',this)">🟡 Maintenance</button>`
+      :`<button class="type-btn type-fault" onclick="toggleMaint('${e.date}','${e.start}','${e.end}',this)">🔴 Fault</button>`;
+    return`<tr id="${rowId(e.date,e.start,e.end)}" class="${m?'maint-row':''}">
+      <td class="t-date">${e.date}</td>
+      <td class="t-time">${e.start} UTC</td>
+      <td class="t-time">${e.end} UTC</td>
+      <td class="t-dur" style="${m?'color:#fbbf24':''}">${e.mins} min</td>
+      <td>${tag}</td>
+      <td>${btn}</td>
+    </tr>`;
+  }).join('');
+  const panelTitle=faultMin>0
+    ?`<span>🔴</span><span>${faultEvents.length} fault event${faultEvents.length!==1?'s':''}</span>`
+    :`<span>🟡</span><span>All events marked as maintenance</span>`;
+  panel.innerHTML=`<div id="panelWrap" class="${faultMin>0?'panel-red':'panel-amber'}">
+    <div id="panelTitle" class="${faultMin>0?'panel-red-title':'panel-amber-title'}">${panelTitle}</div>
+    <table>
+      <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th></th><th>Type</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="maint-note">Click the type button to toggle · Changes are shared with your team (GitHub token required on first use) · Others see changes after refreshing</div>
+  </div>`;
+}
+
+// ── Main render — called once on init ────────────────────────────────────────
+function render(DAYS40,DAILY,genDate){
+  const dataDays=DAYS40.filter(d=>d.hasData);
+  document.getElementById('barStart').textContent=DAYS40[0].date;
+  document.getElementById('s1').textContent=dataDays.length;
+  document.getElementById('s1b').textContent='Out of '+DAYS40.length+'-day window';
+  renderBar(DAYS40);
+  renderStats(DAYS40,DAILY,genDate);
+  renderPanel(DAYS40,DAILY);
 }
 
 async function init(){
