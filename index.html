@@ -16,8 +16,10 @@ h1{font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:3px}
 .bg{background:#065f46;color:#6ee7b7}.br{background:#7f1d1d;color:#fca5a5}
 .bar-wrap{position:relative}
 .uptime-bar{display:flex;gap:2px;height:36px;align-items:stretch}
-.seg{flex:1;border-radius:3px;cursor:pointer;transition:opacity 0.1s;min-width:0}
-.seg:hover{opacity:0.7}
+.seg{flex:1;border-radius:3px;cursor:pointer;transition:opacity 0.1s;min-width:0;position:relative}
+.seg:hover{filter:brightness(1.2)}
+.uptime-bar{overflow:visible}
+.cnt-badge{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;color:#fca5a5;white-space:nowrap;pointer-events:none;line-height:1;letter-spacing:0}
 .bar-labels{display:flex;justify-content:space-between;margin-top:6px}
 .bar-labels span{font-size:11px;color:#475569}
 .uptime-pct{margin-top:6px;font-size:13px;color:#94a3b8}
@@ -161,18 +163,32 @@ async function toggleMaint(date,start,end,btnEl){
   }catch(e){alert('Error: '+e.message);btnEl.innerHTML=orig;btnEl.disabled=false;}
 }
 
-// ── Bar segment color ───────────────────────────────────────────────────────
-function segCol(d){
-  if(!d.hasData)return null;
-  if(!d.gapMinutes)return'#1d9e75';
-  const allM=d.gaps.every(g=>isMaint(d.date,g.start,g.end));
-  return allM?'#d97706':'#e24b4a';
+// ── Bar segment style — Option 3: intensity fill + count badge ───────────────
+function segFaultCount(d){
+  if(!d.hasData||!d.gapMinutes)return 0;
+  return d.gaps.filter(g=>!isMaint(d.date,g.start,g.end)).length;
+}
+function segMaintCount(d){
+  if(!d.hasData||!d.gapMinutes)return 0;
+  return d.gaps.filter(g=>isMaint(d.date,g.start,g.end)).length;
+}
+function segStyle(d){
+  if(!d.hasData)return{bg:'#2d3748',border:'1px solid #374151',opacity:1};
+  if(!d.gapMinutes)return{bg:'#1d9e75',border:'none',opacity:1};
+  const fc=segFaultCount(d),mc=segMaintCount(d);
+  if(fc===0)return{bg:'#d97706',border:'none',opacity:1}; // all maintenance
+  // intensity scales: 1→0.55, 2→0.70, 3→0.85, 4+→1.0
+  const opacity=Math.min(0.55+(fc-1)*0.15,1.0);
+  return{bg:'#e24b4a',border:'none',opacity};
 }
 function segTxt(d){
   if(!d.hasData)return'No data';
   if(!d.gapMinutes)return'✅ Clean';
-  const allM=d.gaps.every(g=>isMaint(d.date,g.start,g.end));
-  return allM?'🟡 Maintenance — '+d.gapMinutes+' min':'🔴 Outage — '+d.gapMinutes+' min with 0 requests';
+  const fc=segFaultCount(d),mc=segMaintCount(d);
+  let parts=[];
+  if(fc)parts.push('🔴 '+fc+' fault'+(fc>1?'s':'')+' — '+d.gaps.filter(g=>!isMaint(d.date,g.start,g.end)).reduce((s,g)=>s+g.minutes,0)+' min');
+  if(mc)parts.push('🟡 '+mc+' maintenance'+(mc>1?' events':'')+' — '+d.gaps.filter(g=>isMaint(d.date,g.start,g.end)).reduce((s,g)=>s+g.minutes,0)+' min');
+  return parts.join(' · ');
 }
 
 // ── Main render (called on load and on every toggle) ────────────────────────
@@ -183,17 +199,25 @@ function render(DAYS40,DAILY,genDate){
   DAYS40.forEach(d=>{
     const seg=document.createElement('div');
     seg.className='seg';
-    const col=segCol(d);
-    seg.style.background=col||'#2d3748';
-    if(!col)seg.style.border='1px solid #374151';
+    const st=segStyle(d);
+    seg.style.background=st.bg;
+    seg.style.opacity=st.opacity;
+    if(st.border)seg.style.border=st.border;
+    // count badge for 2+ faults on same day
+    const fc=segFaultCount(d);
+    if(fc>=2){
+      const badge=document.createElement('span');
+      badge.className='cnt-badge';
+      badge.textContent='×'+fc;
+      seg.appendChild(badge);
+    }
     seg.addEventListener('mouseenter',()=>{
-      seg.style.opacity='0.7';
       tip.style.display='block';
-      tip.innerHTML=`<b style="color:#e2e8f0">${d.date}</b><br><span style="color:${col||'#475569'}">${segTxt(d)}</span>`;
+      tip.innerHTML=`<b style="color:#e2e8f0">${d.date}</b><br><span style="color:${st.bg}">${segTxt(d)}</span>`;
       const sr=seg.getBoundingClientRect(),br=bar.getBoundingClientRect();
       tip.style.left=Math.max(0,Math.min(sr.left-br.left+sr.width/2-tip.offsetWidth/2,br.width-tip.offsetWidth))+'px';
     });
-    seg.addEventListener('mouseleave',()=>{seg.style.opacity='1';tip.style.display='none';});
+    seg.addEventListener('mouseleave',()=>{tip.style.display='none';});
     bar.appendChild(seg);
   });
 
